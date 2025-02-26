@@ -1,0 +1,15 @@
+{
+    "projectName": "MobileDsl",
+    "languages": [{
+        "id": "mobile-dsl",
+        "grammar": "src/language/mobile-dsl.langium",
+        "fileExtensions": [".mdsl"],
+        "textMate": {
+            "out": "syntaxes/mobile-dsl.tmLanguage.json"
+        },
+        "monarch": {
+            "out": "src/syntaxes/mobile-dsl.monarch.ts"
+        }
+    }],
+    "out": "src/language/generated"
+}
