@@ -3,7 +3,7 @@ grammar MobileDsl
 entry Model:
     (plugins+=Plugin | kernel=MicroKernel | events+=Event)+;
 
-// 插件系统核心定义
+// Core plugin system definitions
 Plugin:
     DomainModelPlugin | JourneyPlugin | CapabilityPlugin;
 
@@ -27,7 +27,6 @@ MicroKernel:
         eventBus=EventBus
     '}';
 
-// 事件系统
 Event:
     'event' name=ID ('->' topics+=STRING)*;
 
@@ -39,7 +38,6 @@ EventBus:
 EventRoute:
     from=ID '=>' to=ID;
 
-// 状态管理
 State:
     'state' name=ID ':' type=Type;
 
@@ -51,11 +49,9 @@ Action:
         (effects+=Effect | commands+=Command)*
     '}';
 
-// 命令模式
 Command:
     'command' name=ID '(' params+=Param ')' '=>' handler=ID;
 
-// 视图系统
 View:
     'view' name=ID '{'
         (bindings+=DataBinding)*
@@ -70,7 +66,7 @@ Path:
 Subscription:
     'subscribe' event=ID 'from' plugin=ID;
 
-// 能力接口
+// Capability interface
 API:
     'api' name=ID '{'
         endpoints+=Endpoint*
@@ -81,7 +77,7 @@ Endpoint:
 
 HttpMethod: 'GET' | 'POST' | 'PUT' | 'DELETE';
 
-// 副作用管理
+// Effects management
 Effect:
     RetryPolicy | CircuitBreaker | Timeout;
 
@@ -96,7 +92,7 @@ Timeout:
 
 BackoffStrategy: 'exponential' | 'linear' | 'fixed';
 
-// ==== 类型系统 ====
+// ==== Type System ====
 interface Type {}
 
 interface PrimitiveType extends Type {
@@ -162,19 +158,15 @@ Timeout returns Effect:
 //     {Subscription}
 //     'subscribe' event=ID 'from' plugin=ID;
 
-// 路径表达式
 PathExpression:
     first=ID ('::' rest+=ID)*;
 
-// HTTP方法类型
 HttpMethodType:
     'GET' | 'POST' | 'PUT' | 'DELETE';
 
-// 退避策略类型
 BackoffStrategyType:
     'exponential' | 'linear' | 'fixed';
 
-// // 数据绑定
 // DataBinding:
 //     'bind' path=PathExpression 'to' component=ID ('with' options=BindingOptions)?;
 
@@ -195,14 +187,12 @@ LiteralValue:
 BooleanValue:
     'true' | 'false';
 
-// // 复合类型定义
 // ListType:
 //     'List' '<' elementType=Type '>';
 
 // MapType:
 //     'Map' '<' keyType=Type ',' valueType=Type '>';
 
-// 状态更新操作
 StateUpdate:
     'update' target=PathExpression 'with' expression=Expression;
 
