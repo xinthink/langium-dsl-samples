@@ -1,7 +1,15 @@
 grammar MobileDsl
 
+hidden terminal WS: /\s+/;
+terminal ID: /[_a-zA-Z][\w_]*/;
+terminal INT returns number: /[0-9]+/;
+terminal STRING: /"(\\.|[^"\\])*"|'(\\.|[^'\\])*'/;
+
+hidden terminal ML_COMMENT: /\/\*[\s\S]*?\*\//;
+hidden terminal SL_COMMENT: /\/\/[^\n\r]*/;
+
 entry Model:
-    (plugins+=Plugin | kernel=MicroKernel | events+=Event)+;
+    (plugins+=Plugin | events+=Event)+;
 
 // Core plugin system definitions
 Plugin:
@@ -9,7 +17,7 @@ Plugin:
 
 DomainModelPlugin:
     'domain' name=ID '{'
-        (states+=State | reducers+=Reducer | commands+=Command)*
+        events+=Event* | state+=State
     '}';
 
 JourneyPlugin:
@@ -19,70 +27,60 @@ JourneyPlugin:
 
 CapabilityPlugin:
     'capability' name=ID '{'
-        (apis+=API | effects+=Effect)*
-    '}';
-
-MicroKernel:
-    'kernel' '{'
-        eventBus=EventBus
+        (effects+=Effect)*
     '}';
 
 Event:
-    'event' name=ID ('->' topics+=STRING)*;
-
-EventBus:
-    'eventbus' '{'
-        routes+=EventRoute*
-    '}';
-
-EventRoute:
-    from=ID '=>' to=ID;
+    'event' name=ID; // ('->' topics+=STRING)*;
 
 State:
-    'state' name=ID ':' type=Type;
+    'state' name=ID; // ':' type=Type;
 
-Reducer:
-    'reducer' name=ID '('params+=Param')' '=>' action=Action;
+// Reducer:
+//     'reducer' name=ID '('params+=Param')' '=>' action=Action;
 
-Action:
-    'action' name=ID '{'
-        (effects+=Effect | commands+=Command)*
-    '}';
+// Action:
+//     'action' name=ID '{'
+//         (effects+=Effect | commands+=Command)*
+//     '}';
 
-Command:
-    'command' name=ID '(' params+=Param ')' '=>' handler=ID;
+// Command:
+//     'command' name=ID '(' params+=Param ')' '=>' handler=ID;
 
 View:
     'view' name=ID '{'
         (bindings+=DataBinding)*
     '}';
 
-DataBinding:
-    'bind' path=Path 'to' component=ID;
+// DataBinding:
+//     'bind' path=Path 'to' component=ID;
 
-Path:
-    ID ('.' ID)*;
+// Path returns Path:
+//     {Path}
+//     segments+=ID ('.' segments+=ID)*;
 
 Subscription:
     'subscribe' event=ID 'from' plugin=ID;
 
 // Capability interface
-API:
-    'api' name=ID '{'
-        endpoints+=Endpoint*
-    '}';
+// API:
+//     'api' name=ID '{'
+//         endpoints+=Endpoint*
+//     '}';
 
-Endpoint:
-    method=HttpMethod path=STRING ('=>' handler=ID);
+// Endpoint:
+//     method=HttpMethod path=STRING ('=>' handler=ID);
 
-HttpMethod: 'GET' | 'POST' | 'PUT' | 'DELETE';
+// HttpMethod: 'GET' | 'POST' | 'PUT' | 'DELETE';
 
 // Effects management
+// Should refer to https://effect.website/docs/getting-started/the-effect-type
+//   the definition could be `Effect<Success, Error, Requirements>`
 Effect:
-    RetryPolicy | CircuitBreaker | Timeout;
+    CircuitBreaker | Timeout;
 
-RetryPolicy:
-    'retry' attempts=INT ('backoff' strategy=BackoffStrategy)?;
+// RetryPolicy:
+//     'retry' attempts=INT ('backoff' strategy=BackoffStrategy)?;
 
 CircuitBreaker:
     'circuit-breaker' failureThreshold=INT timeout=INT;
@@ -90,59 +88,59 @@ CircuitBreaker:
 Timeout:
     'timeout' duration=INT;
 
-BackoffStrategy: 'exponential' | 'linear' | 'fixed';
+// BackoffStrategy: 'exponential' | 'linear' | 'fixed';
 
 // ==== Type System ====
-interface Type {}
+// interface Type {}
 
-interface PrimitiveType extends Type {
-    name: 'String' | 'Int' | 'Boolean'
-}
+// interface PrimitiveType extends Type {
+//     name: 'String' | 'Int' | 'Boolean'
+// }
 
-interface CompositeType extends Type {
-    listType?: Type
-    mapKeyType?: Type
-    mapValueType?: Type
-}
+// interface CompositeType extends Type {
+//     listType?: Type
+//     mapKeyType?: Type
+//     mapValueType?: Type
+// }
 
-Type returns Type:
-    PrimitiveType | CompositeType;
+// Type returns Type:
+//     PrimitiveType | CompositeType;
 
-PrimitiveType returns PrimitiveType:
-    {PrimitiveType} name=('String' | 'Int' | 'Boolean');
+// PrimitiveType returns PrimitiveType:
+//     {PrimitiveType} name=('String' | 'Int' | 'Boolean');
 
-CompositeType returns CompositeType:
-    ListType | MapType;
+// CompositeType returns CompositeType:
+//     ListType | MapType;
 
-ListType returns CompositeType:
-    'List' '<' elementType=Type '>'
-    {infer CompositeType}
-    ({listType: elementType});
+// ListType returns CompositeType:
+//     'List' '<' elementType=Type '>'
+//     {infer CompositeType}
+//     ({listType: elementType});
 
-MapType returns CompositeType:
-    'Map' '<' keyType=Type ',' valueType=Type '>'
-    {
-        return {
-            mapKeyType: keyType,
-            mapValueType: valueType
-        };
-    };
+// MapType returns CompositeType:
+//     'Map' '<' keyType=Type ',' valueType=Type '>'
+//     {
+//         return {
+//             mapKeyType: keyType,
+//             mapValueType: valueType
+//         };
+//     };
 
-Param returns Param:
-    {Param}
-    name=ID ':' type=Type;
+// Param returns Param:
+//     {Param}
+//     name=ID ':' type=Type;
 
-Effect returns Effect:
-    RetryPolicy | CircuitBreaker | Timeout;
+// Effect returns Effect:
+//     RetryPolicy | CircuitBreaker | Timeout;
 
-RetryPolicy returns Effect:
-    'retry' attempts=INT ('backoff' strategy=BackoffStrategyType)?;
+// RetryPolicy returns Effect:
+//     'retry' attempts=INT ('backoff' strategy=BackoffStrategyType)?;
 
-CircuitBreaker returns Effect:
-    'circuit-breaker' failureThreshold=INT timeout=INT;
+// CircuitBreaker returns Effect:
+//     'circuit-breaker' failureThreshold=INT timeout=INT;
 
-Timeout returns Effect:
-    'timeout' duration=INT;
+// Timeout returns Effect:
+//     'timeout' duration=INT;
 
 // Command returns Command:
 //     {Command}
@@ -159,33 +157,33 @@ Timeout returns Effect:
 //     'subscribe' event=ID 'from' plugin=ID;
 
 PathExpression:
-    first=ID ('::' rest+=ID)*;
+    first=ID ('.' rest+=ID)*;
 
-HttpMethodType:
-    'GET' | 'POST' | 'PUT' | 'DELETE';
+// HttpMethodType:
+//     'GET' | 'POST' | 'PUT' | 'DELETE';
 
-BackoffStrategyType:
-    'exponential' | 'linear' | 'fixed';
+// BackoffStrategyType:
+//     'exponential' | 'linear' | 'fixed';
 
-// DataBinding:
-//     'bind' path=PathExpression 'to' component=ID ('with' options=BindingOptions)?;
+DataBinding:
+    'bind' path=PathExpression 'to' component=ID; // ('with' options=BindingOptions)?;
 
-BindingOptions:
-    '{'
-        (transformers+=Transformer)*
-    '}';
+// BindingOptions:
+//     '{'
+//         (transformers+=Transformer)*
+//     '}';
 
-Transformer:
-    'transform' name=ID '(' params+=TransformParam ')';
+// Transformer:
+//     'transform' name=ID '(' params+=TransformParam ')';
 
-TransformParam:
-    key=ID '=' value=LiteralValue;
+// TransformParam:
+//     key=ID '=' value=LiteralValue;
 
-LiteralValue:
-    INT | STRING | BooleanValue;
+// LiteralValue:
+//     INT | STRING | BooleanValue;
 
-BooleanValue:
-    'true' | 'false';
+// BooleanValue:
+//     'true' | 'false';
 
 // ListType:
 //     'List' '<' elementType=Type '>';
@@ -193,28 +191,20 @@ BooleanValue:
 // MapType:
 //     'Map' '<' keyType=Type ',' valueType=Type '>';
 
-StateUpdate:
-    'update' target=PathExpression 'with' expression=Expression;
+// StateUpdate:
+//     'update' target=PathExpression 'with' expression=Expression;
 
-Expression:
-    ArithmeticExpression | ComparisonExpression | LogicalExpression;
+// Expression:
+//     ArithmeticExpression | ComparisonExpression | LogicalExpression;
 
-ArithmeticExpression:
-    left=PrimaryExpression operator=('+' | '-' | '*' | '/') right=PrimaryExpression;
+// ArithmeticExpression:
+//     left=PrimaryExpression operator=('+' | '-' | '*' | '/') right=PrimaryExpression;
 
-ComparisonExpression:
-    left=PrimaryExpression operator=('==' | '!=' | '>' | '<' | '>=' | '<=') right=PrimaryExpression;
+// ComparisonExpression:
+//     left=PrimaryExpression operator=('==' | '!=' | '>' | '<' | '>=' | '<=') right=PrimaryExpression;
 
-LogicalExpression:
-    left=PrimaryExpression operator=('&&' | '||') right=PrimaryExpression;
+// LogicalExpression:
+//     left=PrimaryExpression operator=('&&' | '||') right=PrimaryExpression;
 
-PrimaryExpression:
-    LiteralValue | PathExpression | '(' Expression ')';
-
-hidden terminal WS: /\s+/;
-terminal ID: /[_a-zA-Z][\w_]*/;
-terminal INT returns number: /[0-9]+/;
-terminal STRING: /"(\\.|[^"\\])*"|'(\\.|[^'\\])*'/;
-
-hidden terminal ML_COMMENT: /\/\*[\s\S]*?\*\//;
-hidden terminal SL_COMMENT: /\/\/[^\n\r]*/;
+// PrimaryExpression:
+//     LiteralValue | PathExpression | '(' Expression ')';
